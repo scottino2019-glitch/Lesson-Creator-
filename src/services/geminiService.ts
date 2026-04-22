@@ -48,7 +48,7 @@ export async function generateLesson(
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.0-flash-exp", // Switching to 2.0 Flash Exp for better availability and performance
+      model: "gemini-flash-latest", // Switching to core alias for maximum compatibility
       contents: prompt,
       config: {
         systemInstruction,
