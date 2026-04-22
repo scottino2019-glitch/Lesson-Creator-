@@ -63,9 +63,9 @@ export default function App() {
       setActiveChapterIndex(chapters.length);
       setShowGenModal(false);
       setNewTopic('');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Errore durante la generazione della lezione.');
+      alert(`Errore: ${error.message || 'imprevisto durante la generazione'}`);
     } finally {
       setIsGenerating(false);
     }

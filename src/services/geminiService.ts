@@ -23,7 +23,13 @@ export async function generateLesson(
 ): Promise<LessonChapter> {
   console.log(`Avvio generazione lezione: ${language}, ${level}, ${topic}`);
 
-  const activeApiKey = userApiKey || apiKey || "";
+  // Prioritize user-provided key, then environment variable
+  const activeApiKey = userApiKey || apiKey;
+  
+  if (!activeApiKey) {
+    throw new Error("API Key mancante. Inseriscila nelle impostazioni (icona ingranaggio) per continuare.");
+  }
+
   const aiClient = new GoogleGenAI({ apiKey: activeApiKey });
 
   const systemInstruction = `Sei un esperto creatore di corsi di lingua professionali. 
@@ -42,7 +48,7 @@ export async function generateLesson(
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash-exp", // Switching to 2.0 Flash Exp for better availability and performance
       contents: prompt,
       config: {
         systemInstruction,
