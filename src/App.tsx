@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BookOpen, 
@@ -32,8 +32,7 @@ export default function App() {
   const [courseLanguage, setCourseLanguage] = useState('Inglese');
   const [courseLevel, setCourseLevel] = useState<DifficultyLevel>('A1');
   const [newTopic, setNewTopic] = useState('');
-  const [apiKey, setApiKey] = useState(localStorage.getItem('LINGUACRAFT_API_KEY') || '');
-  const [showSettings, setShowSettings] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const activeChapter = chapters[activeChapterIndex];
 
@@ -57,15 +56,16 @@ export default function App() {
   const handleGenerate = async () => {
     if (!newTopic) return;
     setIsGenerating(true);
+    setGenError(null);
     try {
-      const lesson = await generateLesson(courseLanguage, courseLevel, newTopic, apiKey);
+      const lesson = await generateLesson(courseLanguage, courseLevel, newTopic);
       setChapters(prev => [...prev, lesson]);
       setActiveChapterIndex(chapters.length);
       setShowGenModal(false);
       setNewTopic('');
     } catch (error: any) {
       console.error(error);
-      alert(`Errore: ${error.message || 'imprevisto durante la generazione'}`);
+      setGenError(error.message || 'Imprevisto durante la generazione');
     } finally {
       setIsGenerating(false);
     }
@@ -85,10 +85,6 @@ export default function App() {
     downloadHTML(`lezione_${courseLanguage.toLowerCase()}.html`, html);
   };
 
-  useEffect(() => {
-    localStorage.setItem('LINGUACRAFT_API_KEY', apiKey);
-  }, [apiKey]);
-
   return (
     <div className="flex h-screen bg-[#F8FAFC] text-slate-800 font-sans overflow-hidden">
       {/* Sidebar */}
@@ -99,13 +95,6 @@ export default function App() {
               <div className="w-10 h-10 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl ring-4 ring-blue-50">L</div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">LinguaCraft</h1>
             </div>
-            <button 
-              onClick={() => setShowSettings(true)}
-              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-              title="Configura API Key"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </button>
           </div>
           
           <div className="space-y-1">
@@ -507,9 +496,15 @@ export default function App() {
                       />
                     </div>
 
+                    {genError && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                        Errore: {genError}
+                      </div>
+                    )}
+
                     <div className="flex gap-4 pt-2">
                        <button 
-                        onClick={() => setShowGenModal(false)}
+                        onClick={() => { setShowGenModal(false); setGenError(null); }}
                         className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-4 rounded-xl transition-all shadow-sm"
                        >
                         Annulla
@@ -526,53 +521,6 @@ export default function App() {
                   </div>
                 </>
               )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-<AnimatePresence>
-        {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSettings(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
-            >
-              <div className="p-8">
-                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                  Configurazione API
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Gemini API Key</label>
-                    <input 
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="Inserisci la tua chiave API..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
-                      La chiave API viene salvata nel tuo browser e non viene condivisa con nessuno. Necessaria per il funzionamento su Netlify.
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => setShowSettings(false)}
-                    className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
-                  >
-                    Salva e Chiudi
-                  </button>
-                </div>
-              </div>
             </motion.div>
           </div>
         )}
